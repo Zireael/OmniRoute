@@ -65,7 +65,12 @@ jobs:
           npm install better-sqlite3 --no-save --foreground-scripts --no-audit --no-fund
 
       - name: Verify native preflight gate
-        run: node scripts/check/check-native-deps.mjs
+        run: |
+          if [ -f scripts/check/check-native-deps.mjs ]; then
+            node scripts/check/check-native-deps.mjs
+          else
+            node -e "require('better-sqlite3')(':memory:').close(); console.log('native gate: better-sqlite3 resolves (check-native-deps.mjs absent on this ref, direct resolve used instead)')"
+          fi
 
       - name: Build server bundle
         run: |
