@@ -1,0 +1,94 @@
+name: Fork Build — server bundle (manual)
+
+# Personal fork workflow: manually build upstream's server bundle and download it.
+# Lives ONLY in the Zireael/OmniRoute fork. Never PR this upstream.
+#
+# Why these choices (validated 2026-09-19 against build failures):
+# - ubuntu-latest, NOT windows-latest: needs no NSIS/Wine, less RAM pressure.
+# - OMNIROUTE_USE_TURBOPACK=0 (webpack): Turbopack's native Rust compile lives
+#   outside the V8 heap, so NODE_OPTIONS cannot bound it — local build died with
+#   "Zone Allocation failed" / Rust "memory allocation of 106368768 bytes failed".
+#   Webpack is V8-heap-bound, so the heap ceiling + capped workers DO bound it.
+#   Dockerfile documents the same escape hatch (ARG OMNIROUTE_USE_TURBOPACK=0).
+# - CIRCLE_NODE_TOTAL=2 (=> 1 page-data worker): each Next 16 worker peaks at
+#   ~4.5 GB RSS (measured, see Dockerfile comment + docker-build-memory-budget
+#   test). 1 worker + parent ~= 9 GB fits the 16 GB hosted runner.
+# - NODE_OPTIONS=--max-old-space-size=6144: matches Dockerfile default.
+#
+# Run: Actions tab -> "Fork Build — server bundle (manual)" -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "Upstream ref to build (main = last shipped stable, release/vX.Y.Z = bleeding edge, vX.Y.Z tag = exact release)"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout upstream at requested ref
+        uses: actions/checkout@v7
+        with:
+          repository: diegosouzapw/OmniRoute
+          ref: ${{ inputs.upstream_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Show built ref
+        run: |
+          git rev-parse --short HEAD
+          git describe --tags --always || true
+          node --version || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies (incl. optionals)
+        run: npm ci --include=optional --no-audit --no-fund
+
+      - name: Ensure native SQLite binding
+        run: |
+          node -e "require('better-sqlite3')(':memory:').close(); console.log('better-sqlite3 prebuilt OK')" || \
+          npm install better-sqlite3 --no-save --foreground-scripts --no-audit --no-fund
+
+      - name: Verify native preflight gate
+        run: node scripts/check/check-native-deps.mjs
+
+      - name: Build server bundle
+        run: |
+          rm -rf .build dist
+          export OMNIROUTE_BUILD_SHA="$(git rev-parse --short HEAD)"
+          npm run build && npm run build:cli && node scripts/build/write-build-sha.mjs
+        env:
+          NODE_OPTIONS: "--max-old-space-size=6144"
+          OMNIROUTE_BUILD_MEMORY_MB: "6144"
+          OMNIROUTE_USE_TURBOPACK: "0"
+          CIRCLE_NODE_TOTAL: "2"
+          OMNIROUTE_SKIP_NATIVE_DEP_CHECK: "1"
+
+      - name: Verify bundle
+        run: |
+          test -f dist/server.js || (echo "::error::dist/server.js missing" && exit 1)
+          cat dist/BUILD_SHA || true
+          ls dist | head -n 20
+
+      - name: Pack artifact
+        run: tar -czf omniroute-server.tar.gz dist
+
+      - name: Upload server bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniroute-server-${{ inputs.upstream_ref }}-${{ github.run_number }}
+          path: omniroute-server.tar.gz
+          retention-days: 30
