@@ -14,6 +14,12 @@ name: Fork Build — server bundle (manual)
 #   ~4.5 GB RSS (measured, see Dockerfile comment + docker-build-memory-budget
 #   test). 1 worker + parent ~= 9 GB fits the 16 GB hosted runner.
 # - NODE_OPTIONS=--max-old-space-size=6144: matches Dockerfile default.
+# - OMNIROUTE_BUILD_BACKEND_ONLY=1 (default, toggle via input): stubs the ~126
+#   dashboard UI pages before `next build`, leaving every API route intact.
+#   The dashboard graph (recharts, monaco, xyflow, mermaid) dominates the
+#   webpack production pass — full build OOMs at ~5 GB heap on the hosted
+#   runner ("Ineffective mark-compacts near heap limit"). Backend-only serves
+#   the complete API; the dashboard renders nothing.
 #
 # Run: Actions tab -> "Fork Build — server bundle (manual)" -> Run workflow.
 
@@ -25,6 +31,12 @@ on:
         required: true
         default: "main"
         type: string
+      backend_only:
+        description: "Backend-only build (stub dashboard UI — full API, no dashboard pages). Use if full build OOMs."
+        required: false
+        default: "1"
+        type: choice
+        options: ["1", "0"]
 
 permissions:
   contents: read
@@ -76,6 +88,7 @@ jobs:
         run: |
           rm -rf .build dist
           export OMNIROUTE_BUILD_SHA="$(git rev-parse --short HEAD)"
+          export OMNIROUTE_BUILD_BACKEND_ONLY="${{ inputs.backend_only }}"
           npm run build && npm run build:cli && node scripts/build/write-build-sha.mjs
         env:
           NODE_OPTIONS: "--max-old-space-size=6144"
