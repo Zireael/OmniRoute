@@ -8,25 +8,11 @@
 name: Radar Export
 
 on:
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch: # o operador pode publicar sob demanda (de qualquer ref)
-  push:
-    # `main` e a release ativa (default branch) publicam no mesmo asset estável: o
-    # radar-server só consome o asset, então um merge de catálogo na release que ficasse
-    # à espera do cron semanal deixava o feed até 7 dias atrás do README (2026-09-14: a
-    # linha da Together removida em d6e62ae só saiu do feed com dispatch manual).
-    branches: [main, "release/**"]
-    paths:
-      - open-sse/config/freeModelCatalog.data.ts
-      - open-sse/config/freeModelCatalog.ts
-      - open-sse/config/providerRegistry.ts
-      - open-sse/config/providers/**
-      - scripts/release/radar-export.mjs
-      - .github/workflows/radar-export.yml
-  schedule:
-    # Diário 03:17 UTC — antes do `radar-feed.timer` do servidor (04:23 UTC), para o ciclo
-    # do dia já enxergar o export do dia; também mantém geradoEm/proveniência frescos.
-    - cron: "17 3 * * *"
-
 permissions:
   contents: read
 
