@@ -1,13 +1,10 @@
 name: Build Electron Desktop App
 
 on:
-  push:
-    tags:
-      - "v*"
-  # A dispatch builds the ref it is dispatched ON (`gh workflow run … --ref v3.8.50` rebuilds
-  # that tag; `--ref main` builds the repaired line). The ref is deliberately NOT an input:
-  # CodeQL flags an input-controlled checkout next to the npm cache on the default branch as
-  # cache poisoning (actions/cache-poisoning/poisonable-step), and `github.ref` is trusted.
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch:
     inputs:
       version:
