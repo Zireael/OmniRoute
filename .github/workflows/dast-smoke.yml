@@ -7,15 +7,11 @@ name: DAST smoke (PR)
 # (nightly-schemathesis.yml, nightly-llm-security.yml); dispatch this workflow by hand
 # to smoke a release branch on demand.
 on:
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch:
-  pull_request:
-    branches: ["main"]
-    # Runner-cost guard (#8084): the CLI-bundle build alone is 6-11min; a docs-only PR
-    # cannot change DAST behavior, so skip the whole workflow for pure docs/markdown
-    # changes. Any code path in the diff still runs the full smoke.
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
 permissions:
   contents: read
 
