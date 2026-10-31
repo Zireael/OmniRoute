@@ -1,17 +1,10 @@
 name: opencode-plugin CI
 
 on:
-  push:
-    branches: [main, "release/**"]
-    paths:
-      - "@omniroute/opencode-plugin/**"
-      - "@omniroute/opencode-plugin-v2/**"
-  pull_request:
-    branches: [main, "release/**"]
-    paths:
-      - "@omniroute/opencode-plugin/**"
-      - "@omniroute/opencode-plugin-v2/**"
-    types: [opened, synchronize, reopened, ready_for_review]
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch:
 
 concurrency:
