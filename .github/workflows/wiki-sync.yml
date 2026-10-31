@@ -12,16 +12,10 @@ name: Wiki Sync
 # gated on regenerating those sources first.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "README.md"
-      - "AGENTS.md"
-      - "src/shared/constants/routingStrategies.ts"
-      - "config/i18n.json"
-      - "open-sse/mcp-server/server.ts"
-      - "scripts/docs/sync-wiki.mjs"
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch:
 
 permissions:
