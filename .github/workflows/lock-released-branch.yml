@@ -19,11 +19,10 @@ name: Lock released branch
 # v3.8.3 incident on 2026-05-26 where 6 commits landed post-release).
 
 on:
-  release:
-    types: [published]
-  push:
-    branches:
-      - "release/v*"
+  # Automatic triggers (push / pull_request / schedule / release /
+  # workflow_run / ...) were removed on 2026-10-31. This workflow now
+  # runs only when started by hand: Actions tab -> Run workflow, or
+  # `gh workflow run <file>`.
   workflow_dispatch:
     inputs:
       tag:
